@@ -99,7 +99,8 @@ class Node:
     def child_node(self, problem, action):
         """[Figure 3.10]"""
         next_state = problem.result(self.state, action)
-        next_node = Node(next_state, self, action, problem.path_cost(self.path_cost, self.state, action, next_state))
+        next_node = Node(next_state, self, action, problem.path_cost(
+            self.path_cost, self.state, action, next_state))
         return next_node
 
     def solution(self):
@@ -274,7 +275,8 @@ def best_first_graph_search(problem, f, display=False):
         node = frontier.pop()
         if problem.goal_test(node.state):
             if display:
-                print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
+                print(len(explored), "paths have been expanded and",
+                      len(frontier), "paths remain in the frontier")
             return node
         explored.add(node.state)
         for child in node.expand(problem):
@@ -421,7 +423,7 @@ def astar_search(problem, h=None, display=False):
 
 
 # ______________________________________________________________________________
-# A* heuristics 
+# A* heuristics
 
 class EightPuzzle(Problem):
     """ The problem of sliding tiles numbered from 1 to 8 on a 3x3 board, where one of the
@@ -1271,10 +1273,10 @@ class NQueensProblem(Problem):
 
     def conflict(self, row1, col1, row2, col2):
         """Would putting two queens in (row1, col1) and (row2, col2) conflict?"""
-        return (row1 == row2 or  # same row
-                col1 == col2 or  # same column
-                row1 - col1 == row2 - col2 or  # same \ diagonal
-                row1 + col1 == row2 + col2)  # same / diagonal
+        return (row1 == row2  # same row
+                or col1 == col2  # same column
+                or row1 - col1 == row2 - col2  # same \ diagonal
+                or row1 + col1 == row2 + col2)  # same / diagonal
 
     def goal_test(self, state):
         """Check if all columns filled, no conflicts."""

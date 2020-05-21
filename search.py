@@ -17,7 +17,6 @@ class Problem:
     this and implement the methods actions and result, and possibly
     __init__, goal_test, and path_cost. Then you will create instances
     of your subclass and solve them with the various search functions."""
-
     def __init__(self, initial, goal=None):
         """The constructor specifies the initial state, and possibly a goal
         state, if there is a unique goal. Your subclass's constructor can add
@@ -74,7 +73,6 @@ class Node:
     may add an f and h value; see best_first_graph_search and astar_search for
     an explanation of how the f and h values are handled. You will not need to
     subclass this class."""
-
     def __init__(self, state, parent=None, action=None, path_cost=0):
         """Create a search tree Node, derived from a parent by an action."""
         self.state = state
@@ -93,14 +91,17 @@ class Node:
 
     def expand(self, problem):
         """List the nodes reachable in one step from this node."""
-        return [self.child_node(problem, action)
-                for action in problem.actions(self.state)]
+        return [
+            self.child_node(problem, action)
+            for action in problem.actions(self.state)
+        ]
 
     def child_node(self, problem, action):
         """[Figure 3.10]"""
         next_state = problem.result(self.state, action)
-        next_node = Node(next_state, self, action, problem.path_cost(
-            self.path_cost, self.state, action, next_state))
+        next_node = Node(
+            next_state, self, action,
+            problem.path_cost(self.path_cost, self.state, action, next_state))
         return next_node
 
     def solution(self):
@@ -139,7 +140,6 @@ class SimpleProblemSolvingAgentProgram:
     [Figure 3.1]
     Abstract framework for a problem-solving agent.
     """
-
     def __init__(self, initial_state=None):
         """State is an abstract representation of the state
         of the world, and seq is the list of actions required
@@ -231,8 +231,9 @@ def depth_first_graph_search(problem):
         if problem.goal_test(node.state):
             return node
         explored.add(node.state)
-        frontier.extend(child for child in node.expand(problem)
-                        if child.state not in explored and child not in frontier)
+        frontier.extend(
+            child for child in node.expand(problem)
+            if child.state not in explored and child not in frontier)
     return None
 
 
@@ -271,18 +272,28 @@ def best_first_graph_search(problem, f, display=False):
     frontier = PriorityQueue('min', f)
     frontier.append(node)
     explored = set()
+    count = -1
     while frontier:
+
         node = frontier.pop()
+        count += 1
         if problem.goal_test(node.state):
             if display:
+                print(count, end='')
+                '''
                 print(len(explored), "paths have been expanded and",
-                      len(frontier), "paths remain in the frontier")
+                      len(frontier), "paths remain in the frontier",
+                      " popped are ", count, " moves made are ",
+                      len(node.solution()))
+               '''
             return node
         explored.add(node.state)
         for child in node.expand(problem):
+
             if child.state not in explored and child not in frontier:
                 frontier.append(child)
             elif child in frontier:
+
                 if f(child) < frontier[child]:
                     del frontier[child]
                     frontier.append(child)
@@ -291,12 +302,12 @@ def best_first_graph_search(problem, f, display=False):
 
 def uniform_cost_search(problem, display=False):
     """[Figure 3.14]"""
-    return best_first_graph_search(problem, lambda node: node.path_cost, display)
+    return best_first_graph_search(problem, lambda node: node.path_cost,
+                                   display)
 
 
 def depth_limited_search(problem, limit=50):
     """[Figure 3.17]"""
-
     def recursive_dls(node, problem, limit):
         if problem.goal_test(node.state):
             return node
@@ -328,6 +339,7 @@ def iterative_deepening_search(problem):
 # Bidirectional Search
 # Pseudocode from https://webdocs.cs.ualberta.ca/%7Eholte/Publications/MM-AAAI2016.pdf
 
+
 def bidirectional_search(problem):
     e = 0
     if isinstance(problem, GraphProblem):
@@ -346,7 +358,8 @@ def bidirectional_search(problem):
 
         for c in n.expand(problem):
             if c in open_dir or c in closed_dir:
-                if g_dir[c] <= problem.path_cost(g_dir[n], n.state, None, c.state):
+                if g_dir[c] <= problem.path_cost(g_dir[n], n.state, None,
+                                                 c.state):
                     continue
 
                 open_dir.remove(c)
@@ -407,9 +420,7 @@ def bidirectional_search(problem):
 # ______________________________________________________________________________
 # Informed (Heuristic) Search
 
-
 greedy_best_first_graph_search = best_first_graph_search
-
 
 # Greedy best-first search is accomplished by specifying f(n) = h(n).
 
@@ -419,17 +430,18 @@ def astar_search(problem, h=None, display=False):
     You need to specify the h function when you call astar_search, or
     else in your Problem subclass."""
     h = memoize(h or problem.h, 'h')
-    return best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
+    return best_first_graph_search(problem, lambda n: n.path_cost + h(n),
+                                   display)
 
 
 # ______________________________________________________________________________
 # A* heuristics
 
+
 class EightPuzzle(Problem):
     """ The problem of sliding tiles numbered from 1 to 8 on a 3x3 board, where one of the
     squares is a blank. A state is represented as a tuple of length 9, where  element at
     index i represents the tile number  at index i (0 if it's an empty square) """
-
     def __init__(self, initial, goal=(1, 2, 3, 4, 5, 6, 7, 8, 0)):
         """ Define goal state and initialize a problem """
         super().__init__(initial, goal)
@@ -468,7 +480,8 @@ class EightPuzzle(Problem):
 
         delta = {'UP': -3, 'DOWN': 3, 'LEFT': -1, 'RIGHT': 1}
         neighbor = blank + delta[action]
-        new_state[blank], new_state[neighbor] = new_state[neighbor], new_state[blank]
+        new_state[blank], new_state[neighbor] = new_state[neighbor], new_state[
+            blank]
 
         return tuple(new_state)
 
@@ -491,16 +504,21 @@ class EightPuzzle(Problem):
     def h(self, node):
         """ Return the heuristic value for a given state. Default heuristic function used is 
         h(n) = number of misplaced tiles """
-
+        """
+        print(node.state)
+        print(self.goal)
+        print(sum(s != g for (s, g) in zip(node.state, self.goal)))
+        """
         return sum(s != g for (s, g) in zip(node.state, self.goal))
 
+
+# ______________________________________________________________________________
 
 # ______________________________________________________________________________
 
 
 class PlanRoute(Problem):
     """ The problem of moving the Hybrid Wumpus Agent from one place to other """
-
     def __init__(self, initial, goal, allowed, dimrow):
         """ Define goal state and initialize a problem """
         super().__init__(initial, goal)
@@ -645,7 +663,8 @@ def hill_climbing(problem):
         neighbors = current.expand(problem)
         if not neighbors:
             break
-        neighbor = argmax_random_tie(neighbors, key=lambda node: problem.value(node.state))
+        neighbor = argmax_random_tie(
+            neighbors, key=lambda node: problem.value(node.state))
         if problem.value(neighbor.state) <= problem.value(current.state):
             break
         current = neighbor
@@ -669,7 +688,8 @@ def simulated_annealing(problem, schedule=exp_schedule()):
         if not neighbors:
             return current.state
         next_choice = random.choice(neighbors)
-        delta_e = problem.value(next_choice.state) - problem.value(current.state)
+        delta_e = problem.value(next_choice.state) - problem.value(
+            current.state)
         if delta_e > 0 or probability(np.exp(delta_e / T)):
             current = next_choice
 
@@ -688,7 +708,8 @@ def simulated_annealing_full(problem, schedule=exp_schedule()):
         if not neighbors:
             return current.state
         next_choice = random.choice(neighbors)
-        delta_e = problem.value(next_choice.state) - problem.value(current.state)
+        delta_e = problem.value(next_choice.state) - problem.value(
+            current.state)
         if delta_e > 0 or probability(np.exp(delta_e / T)):
             current = next_choice
 
@@ -711,8 +732,9 @@ def and_or_graph_search(problem):
         if state in path:
             return None
         for action in problem.actions(state):
-            plan = and_search(problem.result(state, action),
-                              problem, path + [state, ])
+            plan = and_search(problem.result(state, action), problem, path + [
+                state,
+            ])
             if plan is not None:
                 return [action, plan]
 
@@ -732,12 +754,16 @@ def and_or_graph_search(problem):
 # Pre-defined actions for PeakFindingProblem
 directions4 = {'W': (-1, 0), 'N': (0, 1), 'E': (1, 0), 'S': (0, -1)}
 directions8 = dict(directions4)
-directions8.update({'NW': (-1, 1), 'NE': (1, 1), 'SE': (1, -1), 'SW': (-1, -1)})
+directions8.update({
+    'NW': (-1, 1),
+    'NE': (1, 1),
+    'SE': (1, -1),
+    'SW': (-1, -1)
+})
 
 
 class PeakFindingProblem(Problem):
     """Problem of finding the highest peak in a limited grid"""
-
     def __init__(self, initial, grid, defined_actions=directions4):
         """The grid is a 2 dimensional array/list whose state is specified by tuple of indices"""
         super().__init__(initial)
@@ -753,7 +779,8 @@ class PeakFindingProblem(Problem):
         allowed_actions = []
         for action in self.defined_actions:
             next_state = vector_add(state, self.defined_actions[action])
-            if 0 <= next_state[0] <= self.n - 1 and 0 <= next_state[1] <= self.m - 1:
+            if 0 <= next_state[0] <= self.n - 1 and 0 <= next_state[
+                    1] <= self.m - 1:
                 allowed_actions.append(action)
 
         return allowed_actions
@@ -778,7 +805,6 @@ class OnlineDFSAgent:
     the subclass a problem needs to be provided which is an instance of
     a subclass of the Problem class.
     """
-
     def __init__(self, problem):
         self.problem = problem
         self.s = None
@@ -827,7 +853,6 @@ class OnlineSearchProblem(Problem):
     A problem which is solved by an agent executing
     actions, rather than by just computation.
     Carried in a deterministic and a fully observable environment."""
-
     def __init__(self, initial, goal, graph):
         super().__init__(initial, goal)
         self.graph = graph
@@ -862,7 +887,6 @@ class LRTAStarAgent:
 
     Takes a OnlineSearchProblem [Figure 4.23] as a problem.
     """
-
     def __init__(self, problem):
         self.problem = problem
         # self.result = {}      # no need as we are using problem.result
@@ -881,12 +905,15 @@ class LRTAStarAgent:
                 # self.result[(self.s, self.a)] = s1    # no need as we are using problem.output
 
                 # minimum cost for action b in problem.actions(s)
-                self.H[self.s] = min(self.LRTA_cost(self.s, b, self.problem.output(self.s, b),
-                                                    self.H) for b in self.problem.actions(self.s))
+                self.H[self.s] = min(
+                    self.LRTA_cost(self.s, b, self.problem.output(self.s, b),
+                                   self.H)
+                    for b in self.problem.actions(self.s))
 
             # an action b in problem.actions(s1) that minimizes costs
             self.a = min(self.problem.actions(s1),
-                         key=lambda b: self.LRTA_cost(s1, b, self.problem.output(s1, b), self.H))
+                         key=lambda b: self.LRTA_cost(
+                             s1, b, self.problem.output(s1, b), self.H))
 
             self.s = s1
             return self.a
@@ -924,11 +951,18 @@ def genetic_search(problem, ngen=1000, pmut=0.1, n=20):
     return genetic_algorithm(states[:n], problem.value, ngen, pmut)
 
 
-def genetic_algorithm(population, fitness_fn, gene_pool=[0, 1], f_thres=None, ngen=1000, pmut=0.1):
+def genetic_algorithm(population,
+                      fitness_fn,
+                      gene_pool=[0, 1],
+                      f_thres=None,
+                      ngen=1000,
+                      pmut=0.1):
     """[Figure 4.8]"""
     for i in range(ngen):
-        population = [mutate(recombine(*select(2, population, fitness_fn)), gene_pool, pmut)
-                      for i in range(len(population))]
+        population = [
+            mutate(recombine(*select(2, population, fitness_fn)), gene_pool,
+                   pmut) for i in range(len(population))
+        ]
 
         fittest_individual = fitness_threshold(fitness_fn, f_thres, population)
         if fittest_individual:
@@ -956,7 +990,9 @@ def init_population(pop_number, gene_pool, state_length):
     g = len(gene_pool)
     population = []
     for i in range(pop_number):
-        new_individual = [gene_pool[random.randrange(0, g)] for j in range(state_length)]
+        new_individual = [
+            gene_pool[random.randrange(0, g)] for j in range(state_length)
+        ]
         population.append(new_individual)
 
     return population
@@ -1018,7 +1054,6 @@ class Graph:
     g.get('A') to get a dict of links out of A, and g.get('A', 'B') to get the
     length of the link from A to B. 'Lengths' can actually be any object at
     all, and nodes can be any hashable object."""
-
     def __init__(self, graph_dict=None, directed=True):
         self.graph_dict = graph_dict or {}
         self.directed = directed
@@ -1055,7 +1090,8 @@ class Graph:
     def nodes(self):
         """Return a list of nodes in the graph."""
         s1 = set([k for k in self.graph_dict.keys()])
-        s2 = set([k2 for v in self.graph_dict.values() for k2, v2 in v.items()])
+        s2 = set(
+            [k2 for v in self.graph_dict.values() for k2, v2 in v.items()])
         nodes = s1.union(s2)
         return list(nodes)
 
@@ -1065,7 +1101,10 @@ def UndirectedGraph(graph_dict=None):
     return Graph(graph_dict=graph_dict, directed=False)
 
 
-def RandomGraph(nodes=list(range(10)), min_links=2, width=400, height=300,
+def RandomGraph(nodes=list(range(10)),
+                min_links=2,
+                width=400,
+                height=300,
                 curvature=lambda: random.uniform(1.1, 1.5)):
     """Construct a random graph, with the specified nodes, and random links.
     The nodes are laid out randomly on a (width x height) rectangle.
@@ -1098,29 +1137,40 @@ def RandomGraph(nodes=list(range(10)), min_links=2, width=400, height=300,
 """ [Figure 3.2]
 Simplified road map of Romania
 """
-romania_map = UndirectedGraph(dict(
-    Arad=dict(Zerind=75, Sibiu=140, Timisoara=118),
-    Bucharest=dict(Urziceni=85, Pitesti=101, Giurgiu=90, Fagaras=211),
-    Craiova=dict(Drobeta=120, Rimnicu=146, Pitesti=138),
-    Drobeta=dict(Mehadia=75),
-    Eforie=dict(Hirsova=86),
-    Fagaras=dict(Sibiu=99),
-    Hirsova=dict(Urziceni=98),
-    Iasi=dict(Vaslui=92, Neamt=87),
-    Lugoj=dict(Timisoara=111, Mehadia=70),
-    Oradea=dict(Zerind=71, Sibiu=151),
-    Pitesti=dict(Rimnicu=97),
-    Rimnicu=dict(Sibiu=80),
-    Urziceni=dict(Vaslui=142)))
-romania_map.locations = dict(
-    Arad=(91, 492), Bucharest=(400, 327), Craiova=(253, 288),
-    Drobeta=(165, 299), Eforie=(562, 293), Fagaras=(305, 449),
-    Giurgiu=(375, 270), Hirsova=(534, 350), Iasi=(473, 506),
-    Lugoj=(165, 379), Mehadia=(168, 339), Neamt=(406, 537),
-    Oradea=(131, 571), Pitesti=(320, 368), Rimnicu=(233, 410),
-    Sibiu=(207, 457), Timisoara=(94, 410), Urziceni=(456, 350),
-    Vaslui=(509, 444), Zerind=(108, 531))
-
+romania_map = UndirectedGraph(
+    dict(Arad=dict(Zerind=75, Sibiu=140, Timisoara=118),
+         Bucharest=dict(Urziceni=85, Pitesti=101, Giurgiu=90, Fagaras=211),
+         Craiova=dict(Drobeta=120, Rimnicu=146, Pitesti=138),
+         Drobeta=dict(Mehadia=75),
+         Eforie=dict(Hirsova=86),
+         Fagaras=dict(Sibiu=99),
+         Hirsova=dict(Urziceni=98),
+         Iasi=dict(Vaslui=92, Neamt=87),
+         Lugoj=dict(Timisoara=111, Mehadia=70),
+         Oradea=dict(Zerind=71, Sibiu=151),
+         Pitesti=dict(Rimnicu=97),
+         Rimnicu=dict(Sibiu=80),
+         Urziceni=dict(Vaslui=142)))
+romania_map.locations = dict(Arad=(91, 492),
+                             Bucharest=(400, 327),
+                             Craiova=(253, 288),
+                             Drobeta=(165, 299),
+                             Eforie=(562, 293),
+                             Fagaras=(305, 449),
+                             Giurgiu=(375, 270),
+                             Hirsova=(534, 350),
+                             Iasi=(473, 506),
+                             Lugoj=(165, 379),
+                             Mehadia=(168, 339),
+                             Neamt=(406, 537),
+                             Oradea=(131, 571),
+                             Pitesti=(320, 368),
+                             Rimnicu=(233, 410),
+                             Sibiu=(207, 457),
+                             Timisoara=(94, 410),
+                             Urziceni=(456, 350),
+                             Vaslui=(509, 444),
+                             Zerind=(108, 531))
 """ [Figure 4.9]
 Eight possible states of the vacumm world
 Each state is represented as
@@ -1135,52 +1185,50 @@ Each state is represented as
 7 - CCL     Clean                         Clean                       Left
 8 - CCR     Clean                         Clean                       Right
 """
-vacuum_world = Graph(dict(
-    State_1=dict(Suck=['State_7', 'State_5'], Right=['State_2']),
-    State_2=dict(Suck=['State_8', 'State_4'], Left=['State_2']),
-    State_3=dict(Suck=['State_7'], Right=['State_4']),
-    State_4=dict(Suck=['State_4', 'State_2'], Left=['State_3']),
-    State_5=dict(Suck=['State_5', 'State_1'], Right=['State_6']),
-    State_6=dict(Suck=['State_8'], Left=['State_5']),
-    State_7=dict(Suck=['State_7', 'State_3'], Right=['State_8']),
-    State_8=dict(Suck=['State_8', 'State_6'], Left=['State_7'])
-))
-
+vacuum_world = Graph(
+    dict(State_1=dict(Suck=['State_7', 'State_5'], Right=['State_2']),
+         State_2=dict(Suck=['State_8', 'State_4'], Left=['State_2']),
+         State_3=dict(Suck=['State_7'], Right=['State_4']),
+         State_4=dict(Suck=['State_4', 'State_2'], Left=['State_3']),
+         State_5=dict(Suck=['State_5', 'State_1'], Right=['State_6']),
+         State_6=dict(Suck=['State_8'], Left=['State_5']),
+         State_7=dict(Suck=['State_7', 'State_3'], Right=['State_8']),
+         State_8=dict(Suck=['State_8', 'State_6'], Left=['State_7'])))
 """ [Figure 4.23]
 One-dimensional state space Graph
 """
-one_dim_state_space = Graph(dict(
-    State_1=dict(Right='State_2'),
-    State_2=dict(Right='State_3', Left='State_1'),
-    State_3=dict(Right='State_4', Left='State_2'),
-    State_4=dict(Right='State_5', Left='State_3'),
-    State_5=dict(Right='State_6', Left='State_4'),
-    State_6=dict(Left='State_5')
-))
-one_dim_state_space.least_costs = dict(
-    State_1=8,
-    State_2=9,
-    State_3=2,
-    State_4=2,
-    State_5=4,
-    State_6=3)
-
+one_dim_state_space = Graph(
+    dict(State_1=dict(Right='State_2'),
+         State_2=dict(Right='State_3', Left='State_1'),
+         State_3=dict(Right='State_4', Left='State_2'),
+         State_4=dict(Right='State_5', Left='State_3'),
+         State_5=dict(Right='State_6', Left='State_4'),
+         State_6=dict(Left='State_5')))
+one_dim_state_space.least_costs = dict(State_1=8,
+                                       State_2=9,
+                                       State_3=2,
+                                       State_4=2,
+                                       State_5=4,
+                                       State_6=3)
 """ [Figure 6.1]
 Principal states and territories of Australia
 """
-australia_map = UndirectedGraph(dict(
-    T=dict(),
-    SA=dict(WA=1, NT=1, Q=1, NSW=1, V=1),
-    NT=dict(WA=1, Q=1),
-    NSW=dict(Q=1, V=1)))
-australia_map.locations = dict(WA=(120, 24), NT=(135, 20), SA=(135, 30),
-                               Q=(145, 20), NSW=(145, 32), T=(145, 42),
+australia_map = UndirectedGraph(
+    dict(T=dict(),
+         SA=dict(WA=1, NT=1, Q=1, NSW=1, V=1),
+         NT=dict(WA=1, Q=1),
+         NSW=dict(Q=1, V=1)))
+australia_map.locations = dict(WA=(120, 24),
+                               NT=(135, 20),
+                               SA=(135, 30),
+                               Q=(145, 20),
+                               NSW=(145, 32),
+                               T=(145, 42),
                                V=(145, 37))
 
 
 class GraphProblem(Problem):
     """The problem of searching a graph from one node to another."""
-
     def __init__(self, initial, goal, graph):
         super().__init__(initial, goal)
         self.graph = graph
@@ -1225,7 +1273,6 @@ class GraphProblemStochastic(GraphProblem):
     Define the graph as dict(A = dict(Action = [[<Result 1>, <Result 2>, ...], <cost>], ...), ...)
     A the dictionary format is different, make sure the graph is created as a directed graph.
     """
-
     def result(self, state, action):
         return self.graph.get(state, action)
 
@@ -1245,7 +1292,6 @@ class NQueensProblem(Problem):
     >>> depth_first_tree_search(NQueensProblem(8))
     <Node (7, 3, 0, 2, 5, 1, 6, 4)>
     """
-
     def __init__(self, N):
         super().__init__(tuple([-1] * N))
         self.N = N
@@ -1256,8 +1302,10 @@ class NQueensProblem(Problem):
             return []  # All columns filled; no successors
         else:
             col = state.index(-1)
-            return [row for row in range(self.N)
-                    if not self.conflicted(state, row, col)]
+            return [
+                row for row in range(self.N)
+                if not self.conflicted(state, row, col)
+            ]
 
     def result(self, state, row):
         """Place the next queen at the given row."""
@@ -1268,8 +1316,7 @@ class NQueensProblem(Problem):
 
     def conflicted(self, state, row, col):
         """Would placing a queen at (row, col) conflict with anything?"""
-        return any(self.conflict(row, col, state[c], c)
-                   for c in range(col))
+        return any(self.conflict(row, col, state[c], c) for c in range(col))
 
     def conflict(self, row1, col1, row2, col2):
         """Would putting two queens in (row1, col1) and (row2, col2) conflict?"""
@@ -1282,8 +1329,9 @@ class NQueensProblem(Problem):
         """Check if all columns filled, no conflicts."""
         if state[-1] is -1:
             return False
-        return not any(self.conflicted(state, state[col], col)
-                       for col in range(len(state)))
+        return not any(
+            self.conflicted(state, state[col], col)
+            for col in range(len(state)))
 
     def h(self, node):
         """Return number of conflicting queens for a given node"""
@@ -1300,13 +1348,13 @@ class NQueensProblem(Problem):
 # Inverse Boggle: Search for a high-scoring Boggle board. A good domain for
 # iterative-repair and related search techniques, as suggested by Justin Boyan.
 
-
 ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-cubes16 = ['FORIXB', 'MOQABJ', 'GURILW', 'SETUPL',
-           'CMPDAE', 'ACITAO', 'SLCRAE', 'ROMASH',
-           'NODESW', 'HEFIYE', 'ONUDTK', 'TEVIGN',
-           'ANEDVZ', 'PINESH', 'ABILYT', 'GKYLEU']
+cubes16 = [
+    'FORIXB', 'MOQABJ', 'GURILW', 'SETUPL', 'CMPDAE', 'ACITAO', 'SLCRAE',
+    'ROMASH', 'NODESW', 'HEFIYE', 'ONUDTK', 'TEVIGN', 'ANEDVZ', 'PINESH',
+    'ABILYT', 'GKYLEU'
+]
 
 
 def random_boggle(n=4):
@@ -1319,7 +1367,6 @@ def random_boggle(n=4):
 
 # The best 5x5 board found by Boyan, with our word list this board scores
 # 2274 words, for a score of 9837
-
 
 boyan_best = list('RSTCSDEIAEGNLRPEATESMSSID')
 
@@ -1386,7 +1433,6 @@ class Wordlist:
     """This class holds a list of words. You can use (word in wordlist)
     to check if a word is in the list, or wordlist.lookup(prefix)
     to see if prefix starts any of the words in the list."""
-
     def __init__(self, file, min_len=3):
         lines = file.read().upper().split()
         self.words = [word for word in lines if len(word) >= min_len]
@@ -1394,8 +1440,8 @@ class Wordlist:
         self.bounds = {}
         for c in ALPHABET:
             c2 = chr(ord(c) + 1)
-            self.bounds[c] = (bisect.bisect(self.words, c),
-                              bisect.bisect(self.words, c2))
+            self.bounds[c] = (bisect.bisect(self.words,
+                                            c), bisect.bisect(self.words, c2))
 
     def lookup(self, prefix, lo=0, hi=None):
         """See if prefix is in dictionary, as a full word or as a prefix.
@@ -1518,7 +1564,6 @@ def mutate_boggle(board):
 
 class InstrumentedProblem(Problem):
     """Delegates to a problem, and keeps statistics."""
-
     def __init__(self, problem):
         self.problem = problem
         self.succs = self.goal_tests = self.states = 0
@@ -1550,16 +1595,18 @@ class InstrumentedProblem(Problem):
 
     def __repr__(self):
         return '<{:4d}/{:4d}/{:4d}/{}>'.format(self.succs, self.goal_tests,
-                                               self.states, str(self.found)[:4])
+                                               self.states,
+                                               str(self.found)[:4])
 
 
-def compare_searchers(problems, header,
-                      searchers=[breadth_first_tree_search,
-                                 breadth_first_graph_search,
-                                 depth_first_graph_search,
-                                 iterative_deepening_search,
-                                 depth_limited_search,
-                                 recursive_best_first_search]):
+def compare_searchers(problems,
+                      header,
+                      searchers=[
+                          breadth_first_tree_search,
+                          breadth_first_graph_search, depth_first_graph_search,
+                          iterative_deepening_search, depth_limited_search,
+                          recursive_best_first_search
+                      ]):
     def do(searcher, problem):
         p = InstrumentedProblem(problem)
         searcher(p)
@@ -1571,8 +1618,12 @@ def compare_searchers(problems, header,
 
 def compare_graph_searchers():
     """Prints a table of search results."""
-    compare_searchers(problems=[GraphProblem('Arad', 'Bucharest', romania_map),
-                                GraphProblem('Oradea', 'Neamt', romania_map),
-                                GraphProblem('Q', 'WA', australia_map)],
-                      header=['Searcher', 'romania_map(Arad, Bucharest)',
-                              'romania_map(Oradea, Neamt)', 'australia_map'])
+    compare_searchers(problems=[
+        GraphProblem('Arad', 'Bucharest', romania_map),
+        GraphProblem('Oradea', 'Neamt', romania_map),
+        GraphProblem('Q', 'WA', australia_map)
+    ],
+                      header=[
+                          'Searcher', 'romania_map(Arad, Bucharest)',
+                          'romania_map(Oradea, Neamt)', 'australia_map'
+                      ])

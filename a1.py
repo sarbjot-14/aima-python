@@ -1,8 +1,125 @@
 # a1.py
 
-from search import *
+from search import Node, Problem, astar_search
 import random
 import time
+import sys
+from collections import deque
+
+from utils import *
+
+
+def best_first_graph_search(problem, f, display=False):
+    """Search the nodes with the lowest f scores first.
+    You specify the function f(node) that you want to minimize; for example,
+    if f is a heuristic estimate to the goal, then we have greedy best
+    first search; if f is node.depth then we have breadth-first search.
+    There is a subtlety: the line "f = memoize(f, 'f')" means that the f
+    values will be cached on the nodes as they are computed. So after doing
+    a best first search you can examine the f values of the path returned."""
+    f = memoize(f, 'f')
+    node = Node(problem.initial)
+    frontier = PriorityQueue('min', f)
+    frontier.append(node)
+    explored = set()
+    count = -1
+    while frontier:
+
+        node = frontier.pop()
+        count += 1
+        if problem.goal_test(node.state):
+            if display:
+                print(count, end='')
+
+            return node
+        explored.add(node.state)
+        for child in node.expand(problem):
+
+            if child.state not in explored and child not in frontier:
+                frontier.append(child)
+            elif child in frontier:
+
+                if f(child) < frontier[child]:
+                    del frontier[child]
+                    frontier.append(child)
+    return None
+
+
+class EightPuzzle(Problem):
+    """ The problem of sliding tiles numbered from 1 to 8 on a 3x3 board, where one of the
+    squares is a blank. A state is represented as a tuple of length 9, where  element at
+    index i represents the tile number  at index i (0 if it's an empty square) """
+    def __init__(self, initial, goal=(1, 2, 3, 4, 5, 6, 7, 8, 0)):
+        """ Define goal state and initialize a problem """
+        super().__init__(initial, goal)
+
+    def find_blank_square(self, state):
+        """Return the index of the blank square in a given state"""
+
+        return state.index(0)
+
+    def actions(self, state):
+        """ Return the actions that can be executed in the given state.
+        The result would be a list, since there are only four possible actions
+        in any given state of the environment """
+
+        possible_actions = ['UP', 'DOWN', 'LEFT', 'RIGHT']
+        index_blank_square = self.find_blank_square(state)
+
+        if index_blank_square % 3 == 0:
+            possible_actions.remove('LEFT')
+        if index_blank_square < 3:
+            possible_actions.remove('UP')
+        if index_blank_square % 3 == 2:
+            possible_actions.remove('RIGHT')
+        if index_blank_square > 5:
+            possible_actions.remove('DOWN')
+
+        return possible_actions
+
+    def result(self, state, action):
+        """ Given state and action, return a new state that is the result of the action.
+        Action is assumed to be a valid action in the state """
+
+        # blank is the index of the blank square
+        blank = self.find_blank_square(state)
+        new_state = list(state)
+
+        delta = {'UP': -3, 'DOWN': 3, 'LEFT': -1, 'RIGHT': 1}
+        neighbor = blank + delta[action]
+        new_state[blank], new_state[neighbor] = new_state[neighbor], new_state[
+            blank]
+
+        return tuple(new_state)
+
+    def goal_test(self, state):
+        """ Given a state, return True if state is a goal state or False, otherwise """
+
+        return state == self.goal
+
+    def check_solvability(self, state):
+        """ Checks if the given state is solvable """
+
+        inversion = 0
+        for i in range(len(state)):
+            for j in range(i + 1, len(state)):
+                if (state[i] > state[j]) and state[i] != 0 and state[j] != 0:
+                    inversion += 1
+
+        return inversion % 2 == 0
+
+    def h(self, node):
+        """ Return the heuristic value for a given state. Default heuristic function used is 
+        h(n) = number of misplaced tiles """
+
+        sumMis = sum(s != g for (s, g) in zip(node.state, self.goal))
+        """
+        if node.state[8] != 0:
+            sumMis = sumMis - 1
+        """
+        #print("misplaced ", sumMis)
+        #display(node.state)
+        return sumMis  #sum(s != g for (s, g) in zip(node.state, self.goal))
 
 
 class DuckPuzzle(Problem):
@@ -56,16 +173,7 @@ class DuckPuzzle(Problem):
         elif index_blank_square == 8:
             possible_actions.remove('RIGHT')
             possible_actions.remove('DOWN')
-        """
-        if index_blank_square % 3 == 0:
-            possible_actions.remove('LEFT')
-        if index_blank_square < 3:
-            possible_actions.remove('UP')
-        if index_blank_square % 3 == 2:
-            possible_actions.remove('RIGHT')
-        if index_blank_square > 5:
-            possible_actions.remove('DOWN')
-        """
+
         return possible_actions
 
     def result(self, state, action):
@@ -136,13 +244,7 @@ class DuckPuzzle(Problem):
         return inversion % 2 == 0
 
     def h(self, node):
-        """ Return the heuristic value for a given state. Default heuristic function used is 
-        h(n) = number of misplaced tiles """
-        """
-        print(node.state)
-        print(self.goal)
-        print(sum(s != g for (s, g) in zip(node.state, self.goal)))
-        """
+
         return sum(s != g for (s, g) in zip(node.state, self.goal))
 
 
@@ -152,12 +254,11 @@ def make_rand_8puzzle():
 
     my_state = problem_inst.initial
 
-    for i in range(100):
+    for i in range(200):
         my_actions = EightPuzzle.actions(problem_inst, my_state)
         my_state = EightPuzzle.result(problem_inst, my_state,
                                       random.choice(my_actions))
-        #print(my_state)
-    #print(problem_inst.check_solvability(my_state))
+
     return EightPuzzle(my_state, (1, 2, 3, 4, 5, 6, 7, 8, 0))
 
 
@@ -168,7 +269,7 @@ def make_rand_duckpuzzle():
     my_state = problem_inst.initial
     #display_duck(my_state)
 
-    for i in range(200):
+    for i in range(400):
         my_actions = DuckPuzzle.actions(problem_inst, my_state)
         #print(my_actions)
         my_move = random.choice(my_actions)
@@ -176,8 +277,6 @@ def make_rand_duckpuzzle():
         my_state = DuckPuzzle.result(problem_inst, my_state, my_move)
         #display_duck(my_state)
 
-        #print(my_state)
-    #print(problem_inst.check_solvability(my_state))
     return DuckPuzzle(my_state, (1, 2, 3, 4, 5, 6, 7, 8, 0))
 
 
@@ -234,12 +333,13 @@ def manattan_dist(node):
         5: [2, 1, 2, 1, 0, 1, 2, 1, 2],
         6: [3, 2, 1, 2, 1, 0, 3, 2, 1],
         7: [2, 3, 4, 1, 2, 3, 0, 1, 2],
-        8: [3, 2, 3, 2, 1, 2, 1, 0, 1],
-        0: [4, 3, 2, 3, 2, 1, 2, 1, 0]
+        8: [3, 2, 3, 2, 1, 2, 1, 0, 1]
     }
 
     for i in range(len(state)):
-        mhd = table_patterns[state[i]][i] + mhd
+        if (state[i] != 0):
+            mhd = table_patterns[state[i]][i] + mhd
+
     return mhd
 
 
@@ -257,12 +357,13 @@ def manattan_dist_duck(node):
         5: [3, 2, 2, 1, 0, 1, 2, 1, 2],
         6: [4, 3, 3, 2, 1, 0, 3, 2, 1],
         7: [3, 2, 2, 1, 2, 3, 0, 1, 2],
-        8: [4, 3, 3, 2, 1, 2, 1, 0, 1],
-        0: [5, 4, 4, 3, 2, 1, 2, 1, 0]
+        8: [4, 3, 3, 2, 1, 2, 1, 0, 1]
     }
 
     for i in range(len(state)):
-        mhd = table_patterns[state[i]][i] + mhd
+        if (state[i] != 0):
+            mhd = table_patterns[state[i]][i] + mhd
+
     return mhd
 
 
@@ -278,12 +379,12 @@ def misplaced_and_manattan_dist(node):
         5: [2, 1, 2, 1, 0, 1, 2, 1, 2],
         6: [3, 2, 1, 2, 1, 0, 3, 2, 1],
         7: [2, 3, 4, 1, 2, 3, 0, 1, 2],
-        8: [3, 2, 3, 2, 1, 2, 1, 0, 1],
-        0: [4, 3, 2, 3, 2, 1, 2, 1, 0]
+        8: [3, 2, 3, 2, 1, 2, 1, 0, 1]
     }
 
     for i in range(len(state)):
-        mhd = table_patterns[state[i]][i] + mhd
+        if (state[i] != 0):
+            mhd = table_patterns[state[i]][i] + mhd
 
     misplaced = sum(s != g
                     for (s, g) in zip(node.state, (1, 2, 3, 4, 5, 6, 7, 8, 0)))
@@ -303,12 +404,12 @@ def misplaced_and_manattan_duck(node):
         5: [3, 2, 2, 1, 0, 1, 2, 1, 2],
         6: [4, 3, 3, 2, 1, 0, 3, 2, 1],
         7: [3, 2, 2, 1, 2, 3, 0, 1, 2],
-        8: [4, 3, 3, 2, 1, 2, 1, 0, 1],
-        0: [5, 4, 4, 3, 2, 1, 2, 1, 0]
+        8: [4, 3, 3, 2, 1, 2, 1, 0, 1]
     }
 
     for i in range(len(state)):
-        mhd = table_patterns[state[i]][i] + mhd
+        if (state[i] != 0):
+            mhd = table_patterns[state[i]][i] + mhd
 
     misplaced = sum(s != g
                     for (s, g) in zip(node.state, (1, 2, 3, 4, 5, 6, 7, 8, 0)))
@@ -318,11 +419,14 @@ def misplaced_and_manattan_duck(node):
 
 ## Question 2
 def question_two():
+    print("question 2:")
+    print("Test #   Tiles removed   Time")
     rand_inst = []
     for i in range(10):
 
         rand_inst.append(make_rand_8puzzle())
-
+    #default heuristic
+    print("default heuristic")
     for i in range(10):
         ##print(i)
         start_time = time.time()
@@ -330,12 +434,16 @@ def question_two():
         print("#", i, ", ", end="")
         final_node = astar_search(rand_inst[i], None, display)
         print(", ", len(final_node.solution()), end="")
+
         #print(final_node.state)
         elapsed_time = time.time() - start_time
 
         print(", ", elapsed_time)
 
     print(" ")
+
+    #manhattan heuristic
+    print("manhattan heuristic")
     for i in range(10):
         ##print(i)
         start_time = time.time()
@@ -348,6 +456,9 @@ def question_two():
 
         print(", ", elapsed_time)
     print(" ")
+
+    #max of manhattan and misplaced heuristic
+    print("max of manhattan and misplaced heuristic")
     for i in range(10):
         ##print(i)
         start_time = time.time()
@@ -355,25 +466,29 @@ def question_two():
         print("#", i, ", ", end="")
         final_node = astar_search(rand_inst[i], misplaced_and_manattan_dist,
                                   display)
+        #display_duck(final_node.state)
         print(", ", len(final_node.solution()), end="")
-        #print(final_node.state)
+
         elapsed_time = time.time() - start_time
 
         print(", ", elapsed_time)
+
     return
 
 
 def question_three():
-    #duck = make()
-
+    #duck puzzle
+    print("question three")
     rand_inst = []
     for i in range(10):
         rand_inst.append(make_rand_duckpuzzle())
 
+    #default heuristic
+    print("default heuristic")
     for i in range(10):
-        ##print(i)
+        #display_duck(rand_inst[i].initial)
         start_time = time.time()
-        #display(rand_inst[i].initial)
+
         print("#", i, ", ", end="")
         final_node = astar_search(rand_inst[i], None, display_duck)
         print(", ", len(final_node.solution()), end="")
@@ -384,6 +499,9 @@ def question_three():
 
     print(" ")
     print(" ")
+
+    #manhattan heuristic
+    print("manhattan heuristic")
     for i in range(10):
         ##print(i)
         start_time = time.time()
@@ -392,11 +510,15 @@ def question_three():
         final_node = astar_search(rand_inst[i], manattan_dist_duck, display)
         print(", ", len(final_node.solution()), end="")
         #print(final_node.state)
+
         elapsed_time = time.time() - start_time
 
         print(", ", elapsed_time)
     print(" ")
     print(" ")
+
+    #max of manhattan and misplaced heuristic
+    print("max of manhattan and misplaced heuristic")
     for i in range(10):
         ##print(i)
         start_time = time.time()
@@ -404,8 +526,10 @@ def question_three():
         print("#", i, ", ", end="")
         final_node = astar_search(rand_inst[i], misplaced_and_manattan_duck,
                                   display)
+
         print(", ", len(final_node.solution()), end="")
         #print(final_node.state)
+
         elapsed_time = time.time() - start_time
 
         print(", ", elapsed_time)
@@ -414,5 +538,5 @@ def question_three():
     return
 
 
+question_two()
 question_three()
-#question_two()
